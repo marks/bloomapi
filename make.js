@@ -34,6 +34,7 @@ target.fetch = function () {
 target.bootstrap = function () {
   var pg = require('./lib/sources/pg'),
       npi = require('./lib/sources/npi'),
+      taxonomy = require('./lib/sources/taxonomy'),
       fs = require('fs');
 
   logger.data.info('bootstrapping bloomapi');
@@ -41,6 +42,7 @@ target.bootstrap = function () {
   target.docs();
 
   Q.nfcall(fs.readFile, './lib/sources/npi/bootstrap.sql', {encoding: 'utf8'})
+    // NPI database work
     .then(function (data) {
       return Q.ninvoke(pg, 'query', data);
     })
@@ -54,12 +56,17 @@ target.bootstrap = function () {
       }
     })
     .then(npi.update)
+    // Taxonomy database work
+    .then(taxonomy.update)
+    // Present errors 
     .fail(function (e) {
       console.error("Error:\n", e.stack);
       process.exit(1);
     })
+    // Close connection
     .done(function () {
       pg.end(); 
+      logger.data.info('bootstrapping of bloomapi is complete')
     });
 }
 
